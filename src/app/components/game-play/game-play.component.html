@@ -1,0 +1,5 @@
+
+<div class="gameplay-container">
+  <app-random-paragraph class="random-paragraph-component" [paragraph]="randomParagraph" [typedSoFar]="typedSoFar" [currentEditingIndex]="paragraphIndex" [hasError]="errorState" [indexOfFirstError]="indexOfFirstError"></app-random-paragraph>
+  <app-text-input #textInput class="text-input-component" (inputChanged)="onTextInput($event)" [isDisabled]="disableInput"></app-text-input>
+</div>

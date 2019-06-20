@@ -1,0 +1,9 @@
+
+<input #textInputField class="input-field" type="text" 
+    [(ngModel)]="currentValue" 
+    (blur)="onBlur($event)" 
+    (mousedown)="onMouseDown($event)" 
+    [disabled]="isDisabled" 
+    (input)="onInput($event)"
+    appBlockCopyPasteCut
+    [appAutoFocus]="true" />

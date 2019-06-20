@@ -1,0 +1,22 @@
+.gameplay-container {
+    padding: 15px;
+    border: 2px solid black;
+    border-radius: 5px;
+    display: inline-block;
+    text-align: center;
+
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+
+    .text-input-component {
+        margin-top: 12px;
+        display: block;
+    }
+
+    .random-paragraph-component {
+        display: block;
+    }
+}
