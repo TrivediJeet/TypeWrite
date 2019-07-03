@@ -6,7 +6,7 @@ import { Component, OnInit, Input } from '@angular/core';
 	styleUrls: ['./random-paragraph.component.scss']
 })
 export class RandomParagraphComponent implements OnInit {
-	// The entire bound paragraph
+	// The bound paragraph
 	@Input() paragraph: string;
 	// Whether the user has made a typo
 	@Input() hasError: boolean;
@@ -29,7 +29,6 @@ export class RandomParagraphComponent implements OnInit {
 	}
 
 	@Input() set typedSoFar(text: string) {
-		// console.log('text changed: ' + text);
 		if (!this.hasError) {
 			this.correct = this.paragraph.substring(0, this.currentEditingIndex);
 			this.incorrect = '';

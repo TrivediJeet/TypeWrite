@@ -1,9 +1,15 @@
 
 import { timer, Subscription } from 'rxjs';
-import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, OnDestroy, ViewContainerRef, Output, EventEmitter } from '@angular/core';
 
 import { Queue } from 'src/app/data-structures/queue';
+import { DomService } from 'src/app/services/dom-service/dom.service';
+import { PerformanceMetricsComponent } from 'src/app/components/performance-metrics/performance-metrics.component';
 import { TextInputComponent } from 'src/app/components/text-input/text-input.component';
+
+interface IDictionary {
+	[key: string]: any;
+}
 
 @Component({
 	selector: 'app-game-play',
@@ -11,7 +17,10 @@ import { TextInputComponent } from 'src/app/components/text-input/text-input.com
 	styleUrls: ['./game-play.component.scss']
 })
 export class GamePlayComponent implements OnInit, OnDestroy {
+	// Child TextInputComponent
 	@ViewChild(TextInputComponent) textInput: TextInputComponent;
+	// Notifies home-dashboard that game ended
+	@Output() gameEndedEmitter: EventEmitter<any> = new EventEmitter();
 
 	// The fetched random paragraph to be bound to the child randomParagraphComponent
 	public randomParagraph: string;
@@ -39,18 +48,16 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 	private totalNumberOfWords: number;
 	// Hold refrence to time ticker subscription as member variable so that we can unsubscribe onDestroy
 	private timePassedSubscription: Subscription;
+	// Service used to dynamically create and destroy component views
+	private domService: DomService;
+	private viewContainerRef: ViewContainerRef;
 
-	constructor() {
-		// TODO: create passthrough service to make API calls to fetch meaningful paragraphs
-		this.randomParagraph = 'There is nothing impossible to him who will try';
-		this.typedSoFar = '';
-		this.totalErrorCount = 0;
+	constructor(domService: DomService, viewContainerRef: ViewContainerRef) {
+		this.domService = domService;
+		this.viewContainerRef = viewContainerRef;
 	}
 
 	ngOnInit() {
-		this.populateWordQue();
-		this.getNextWordToAttempt();
-		this.startTimer();
 	}
 
 	ngOnDestroy() {
@@ -59,7 +66,25 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	// Delegate for backspace press
+	public prepareGame() {
+		// TODO: create passthrough service to make API calls to fetch meaningful paragraphs
+		this.randomParagraph = 'There is nothing impossible to him who will try';
+		this.disableInput = true;
+		this.typedSoFar = '';
+		this.totalErrorCount = 0;
+		this.populateWordQue();
+		this.getNextWordToAttempt();
+	}
+
+	public startGame() {
+		this.disableInput = false;
+		setTimeout(() => {
+			this.textInput.focus();
+		}, 0);
+		this.startTimer();
+	}
+
+	// Delegate for backspace press into the child textInputComponent's input field
 	public onBackspace() {
 		this.typedSoFar = this.typedSoFar.substring(0, this.typedSoFar.length - 1);
 		this.paragraphIndex--;
@@ -102,6 +127,7 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		return this.currentEditingIndex === this.currentWordToAttempt.length  && this.textInput.currentValue === this.currentWordToAttempt;
 	}
 
+	// Sets error state member variables accordingly
 	private handleError() {
 		this.errorState = true;
 		this.totalErrorCount++;
@@ -121,30 +147,47 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	// Disables input field then calculates performance metrics and logs them to console
+	// Ends game and presents performance metrics component
 	private Win() {
 		this.disableInput = true;
+		this.currentEditingIndex = 0;
+		this.paragraphIndex = 0;
+		this.typedSoFar = undefined;
 
 		if (this.timePassedSubscription) {
 			this.timePassedSubscription.unsubscribe();
 		}
 
-		const minutesElapsed = this.totalSecondsElapsed / 60;
-		const wordsPerMinute = this.totalNumberOfWords / minutesElapsed;
+		if (this.gameEndedEmitter) {
+			this.gameEndedEmitter.emit();
+		}
 
+		this.domService.appendComponentAsSibling(PerformanceMetricsComponent, this.viewContainerRef, this.calculatePerformanceMetrics());
+	}
+
+	// Returns a dictionary containing computed performance metrics
+	private calculatePerformanceMetrics(): IDictionary {
+		const minutesElapsed = this.totalSecondsElapsed / 60;
+		const wordsPerMinute = Math.round(this.totalNumberOfWords / minutesElapsed);
 		const totalCharacters = this.randomParagraph.length;
 		const accuracy = (totalCharacters - this.totalErrorCount) / totalCharacters;
 		const accuracyPercentage = Math.round(accuracy * 100);
 
-		console.log('You win!');
-		console.log('Total elapsed time: ', this.totalSecondsElapsed, ' seconds');
-		console.log('Words per minute: ', wordsPerMinute);
-		console.log('Accuracy: ', accuracyPercentage, '%');
+		const metricsDictionary = {
+			elapsedTime: this.totalSecondsElapsed,
+			wpm: wordsPerMinute ,
+			accuracy: accuracyPercentage
+		} as IDictionary;
+
+		return metricsDictionary;
 	}
 
-	// Returns an array of substrings from the given string parameter split using space as the seperator
+	// Returns an array of word strings from the given string 'paragraph' parameter split using space as the seperator
 	private splitParagraph(paragraph: string): string[] {
-		return paragraph.split(' ').map((item) => item + ' ');
+		const words = paragraph.split(' ').map((item) => item + ' ');
+		// Trim trailing space on final word
+		words[words.length - 1] = words[words.length - 1].trim();
+		return words;
 	}
 
 	// Populates the Que of words to type from the fetched random paragraph
@@ -159,10 +202,10 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		this.totalNumberOfWords = totalNumberOfWords;
 	}
 
-	// Begins a timer after 3 seconds which emits an event every subsequent second
+	// Begins a timer which emits an event every second
 	// and subscribes to the event, setting the totalTimeElapsed member variable accordingly
 	private startTimer() {
-		const timeElapsedTicker = timer(3000, 1000);
+		const timeElapsedTicker = timer(0, 1000);
 		this.timePassedSubscription = timeElapsedTicker.subscribe((totalSecondsPassed: number) => {
 			this.totalSecondsElapsed = totalSecondsPassed;
 		});
