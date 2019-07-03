@@ -1,5 +1,7 @@
 import { Component, OnInit, Output, EventEmitter, Input, ViewChild, ElementRef } from '@angular/core';
 
+import { MatTooltip} from '@angular/material/tooltip';
+
 @Component({
 	selector: 'app-text-input',
 	templateUrl: './text-input.component.html',
@@ -7,13 +9,23 @@ import { Component, OnInit, Output, EventEmitter, Input, ViewChild, ElementRef }
 })
 export class TextInputComponent implements OnInit {
 	// Template reference variable for native input element
-	@ViewChild('textInputField') nameInputRef: ElementRef;
+	@ViewChild('textInputField') elementRef: ElementRef;
+	// Refrence to the 'Fix Typo!' tooltip
+	@ViewChild('matTooltip') matTooltip: MatTooltip;
 	// The 'model' bound to the input field (it's current value)
 	@Input() currentValue: string;
 	// Whether to disable the input field
 	@Input() isDisabled: boolean;
 	// Event raised when a character is typed into the input field
 	@Output() inputChanged = new EventEmitter<Event>();
+	// Intercept setting hasError to toggle display of tooltip
+	@Input() set hasError(errorState: boolean) {
+		if (errorState) {
+			this.matTooltip.show();
+		} else {
+			this.matTooltip.hide();
+		}
+	}
 
 	constructor() {
 	}
@@ -28,15 +40,21 @@ export class TextInputComponent implements OnInit {
 		}
 	}
 
-	// Prevent mouse down to avoid selection within input field
-	public onMouseDown($event: MouseEvent) {
+	// Prevents mouse events to avoid selection within input field, toggling the tooltip, losing focus, etc.
+	public onMouseEvent($event: MouseEvent) {
 		$event.preventDefault();
+		$event.stopImmediatePropagation();
 	}
 
-	// Prevent loss of focus of input field
+	// Manually prevents loss of focus from input field
 	public onBlur($event: FocusEvent) {
 		$event.stopImmediatePropagation();
 		$event.preventDefault();
-		this.nameInputRef.nativeElement.focus();
+		this.focus();
+	}
+
+	// Focuses input field
+	public focus() {
+		this.elementRef.nativeElement.focus();
 	}
 }

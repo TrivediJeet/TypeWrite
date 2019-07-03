@@ -1,0 +1,34 @@
+:host {
+    margin-top: 30px;
+    border: 2px solid black;
+    border-radius: 5px;
+    // Horizontally center within flex-box
+    align-self: center;
+    padding: 15px;
+    display: table;
+    text-align: left;
+}
+
+div > span {
+    display: block;
+    padding-bottom: 15px;
+}
+
+.metric-container {
+    display: table-row;
+    .metric-caption {
+        display: table-cell;
+    }
+    .metric-value {
+        display: table-cell;
+        padding: 0px 12px;
+        color: blue;
+    }
+    .metric-unit {
+        display: table-cell;
+    }
+}
+
+div > span {
+    display: inline-block;
+}

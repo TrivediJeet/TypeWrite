@@ -1,4 +1,6 @@
-.gameplay-container {
+:host {
+    // Horizontally center within flex-box
+    align-self: center;
     padding: 15px;
     border: 2px solid black;
     border-radius: 5px;
@@ -10,6 +12,9 @@
     -webkit-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+.gameplay-container {
 
     .text-input-component {
         margin-top: 12px;
