@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { timer } from 'rxjs';
 
-import { DomService } from 'src/app/services/dom-service/dom.service';
+import { DomService } from 'src/app/services/dom/dom.service';
 import { GamePlayComponent } from 'src/app/components/game-play/game-play.component';
 
 @Component({
