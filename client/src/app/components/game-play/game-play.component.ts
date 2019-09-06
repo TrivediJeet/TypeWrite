@@ -3,9 +3,10 @@ import { timer, Subscription } from 'rxjs';
 import { Component, OnInit, ViewChild, OnDestroy, ViewContainerRef, Output, EventEmitter } from '@angular/core';
 
 import { Queue } from 'src/app/data-structures/queue';
-import { DomService } from 'src/app/services/dom-service/dom.service';
+import { DomService } from 'src/app/services/dom/dom.service';
 import { PerformanceMetricsComponent } from 'src/app/components/performance-metrics/performance-metrics.component';
 import { TextInputComponent } from 'src/app/components/text-input/text-input.component';
+import { SocketCommunicationService } from 'src/app/services/socket-communication/socket-communication.service';
 
 interface IDictionary {
 	[key: string]: any;
@@ -48,13 +49,11 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 	private totalNumberOfWords: number;
 	// Hold refrence to time ticker subscription as member variable so that we can unsubscribe onDestroy
 	private timePassedSubscription: Subscription;
-	// Service used to dynamically create and destroy component views
-	private domService: DomService;
-	private viewContainerRef: ViewContainerRef;
 
-	constructor(domService: DomService, viewContainerRef: ViewContainerRef) {
-		this.domService = domService;
-		this.viewContainerRef = viewContainerRef;
+	constructor(
+		private domService: DomService,
+		private viewContainerRef: ViewContainerRef,
+		private socketService: SocketCommunicationService) {
 	}
 
 	ngOnInit() {
@@ -163,6 +162,7 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		}
 
 		this.domService.appendComponentAsSibling(PerformanceMetricsComponent, this.viewContainerRef, this.calculatePerformanceMetrics());
+		this.socketService.sendTestMessage('I won!');
 	}
 
 	// Returns a dictionary containing computed performance metrics

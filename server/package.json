@@ -1,0 +1,21 @@
+{
+  "name": "type-write",
+  "version": "0.0.0",
+  "description": "TODO",
+  "main": "app.js",
+  "scripts": {
+    "dev": "nodemon ./app.js",
+    "debug": "nodemon --inspect ./app.js",
+    "test": "test"
+  },
+  "keywords": [],
+  "author": "Jeet Trivedi",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^1.19.2"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.2.0"
+  }
+}
