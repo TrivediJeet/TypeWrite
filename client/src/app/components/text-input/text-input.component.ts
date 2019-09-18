@@ -57,4 +57,12 @@ export class TextInputComponent implements OnInit {
 	public focus() {
 		this.elementRef.nativeElement.focus();
 	}
+
+	public onKeydown($event: KeyboardEvent) {
+		// Prevent arrow keys to avoid moving of caret
+		if ($event.key in {ArrowUp: '', ArrowDown: '', ArrowLeft: '', ArrowRight: ''}) {
+			$event.preventDefault();
+			$event.stopImmediatePropagation();
+		}
+	}
 }

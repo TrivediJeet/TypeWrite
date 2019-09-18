@@ -4,9 +4,9 @@ import { Component, OnInit, ViewChild, OnDestroy, ViewContainerRef, Output, Even
 
 import { Queue } from 'src/app/data-structures/queue';
 import { DomService } from 'src/app/services/dom/dom.service';
-import { PerformanceMetricsComponent } from 'src/app/components/performance-metrics/performance-metrics.component';
 import { TextInputComponent } from 'src/app/components/text-input/text-input.component';
 import { SocketCommunicationService } from 'src/app/services/socket-communication/socket-communication.service';
+import { PerformanceMetricsComponent } from 'src/app/components/performance-metrics/performance-metrics.component';
 
 interface IDictionary {
 	[key: string]: any;
@@ -26,7 +26,7 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 	// The fetched random paragraph to be bound to the child randomParagraphComponent
 	public randomParagraph: string;
 	// Boolean bound to child textInputComponent which disables its input field
-	public disableInput: boolean;
+	public disableInput = true;
 	// The index of the character the user is currently attempting to type in reference to the currentWordToAttempt
 	public currentEditingIndex = 0;
 	// The index of the character the user is currently attempting to type in reference to the bound paragraph
@@ -47,8 +47,21 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 	private totalSecondsElapsed: number;
 	// The total number of words in the fetched paragraph
 	private totalNumberOfWords: number;
-	// Hold refrence to time ticker subscription as member variable so that we can unsubscribe onDestroy
+	// Toggles display of countdown timer
+	public showCountdown = false;
+	// Model bound to the countdown timer element
+	public countdownValue: number;
+	// Whether the user is waiting to join a game session
+	public inSessionQueue = false;
+	// Whether the user is in an active session which is yet to start
+	public waitingForSessionToBegin = false;
+	// The number of characters in the fetched random paragraph
+	private paragraphLength: number;
+
+	// Hold refrence to subscriptions/intervals so we can unsubscribe onDestroy
 	private timePassedSubscription: Subscription;
+	private socketCommunicationSubscription: Subscription;
+	private statusPollingInterval: any;
 
 	constructor(
 		private domService: DomService,
@@ -57,22 +70,57 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnInit() {
+		// TODO: Significant refactor (perhaps pull logic out into the communication service)
+		this.socketCommunicationSubscription =  this.socketService.getMessages().subscribe((message: any) => {
+			switch (message.caption) {
+				case 'GameStarted': {
+					console.log('game started!');
+					this.startCountdownTimer();
+					this.waitingForSessionToBegin = false;
+					break;
+				}
+				case 'JoinedSession': {
+					console.log('Joined session: ', message);
+					this.inSessionQueue = false;
+					this.waitingForSessionToBegin = true;
+
+					this.randomParagraph = message.sessionState.quote.en;
+					this.paragraphLength = this.randomParagraph.length;
+					this.populateWordQue();
+					this.getNextWordToAttempt();
+
+					this.totalErrorCount = 0;
+					this.disableInput = true;
+					this.typedSoFar = '';
+
+					break;
+				}
+				case 'serverStateUpdate': {
+					console.log('Session state update from server: ', message.sessionState);
+					break;
+				}
+				default: {
+					console.log('message recieved from server but there is no registered delegate');
+					break;
+				}
+			}
+		});
 	}
 
 	ngOnDestroy() {
 		if (this.timePassedSubscription) {
 			this.timePassedSubscription.unsubscribe();
 		}
+		if (this.socketCommunicationSubscription) {
+			this.socketCommunicationSubscription.unsubscribe();
+		}
+		if (this.statusPollingInterval) {
+			clearInterval(this.statusPollingInterval);
+		}
 	}
 
 	public prepareGame() {
-		// TODO: create passthrough service to make API calls to fetch meaningful paragraphs
-		this.randomParagraph = 'There is nothing impossible to him who will try';
-		this.disableInput = true;
-		this.typedSoFar = '';
-		this.totalErrorCount = 0;
-		this.populateWordQue();
-		this.getNextWordToAttempt();
+		this.enQueue();
 	}
 
 	public startGame() {
@@ -81,25 +129,28 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 			this.textInput.focus();
 		}, 0);
 		this.startTimer();
+		this.startPollingStateToServer();
 	}
 
-	// Delegate for backspace press into the child textInputComponent's input field
 	public onBackspace() {
 		this.typedSoFar = this.typedSoFar.substring(0, this.typedSoFar.length - 1);
 		this.paragraphIndex--;
 	}
 
-	// Delegate for character input into the child textInputComponent's input field
 	public onCharacterInput(characterValue: string) {
 		this.typedSoFar = this.typedSoFar.concat(characterValue);
 		this.paragraphIndex++;
 	}
 
-	// On input, calls respective delegate method, sets current editing index and calls validateInput
 	public onTextInput($event: any) {
 		($event.inputType === 'deleteContentBackward') ? this.onBackspace() : this.onCharacterInput($event.data);
 		this.currentEditingIndex = this.textInput.currentValue.length;
 		this.validateInput();
+	}
+
+	private enQueue() {
+		this.inSessionQueue = true;
+		this.socketService.enQueue();
 	}
 
 	private validateInput() {
@@ -110,7 +161,6 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	// Calls handleError if the user made a typo, otherwise clears error state member variables
 	private validateSubstringOfCurrentWordToAttempt() {
 		const substrOfCurrentWord = this.currentWordToAttempt.substring(0, this.currentEditingIndex);
 		if (this.textInput.currentValue === substrOfCurrentWord) {
@@ -121,7 +171,6 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	// Whether the user has completed the current word to attempt
 	private completedCurrentWordToAttempt() {
 		return this.currentEditingIndex === this.currentWordToAttempt.length  && this.textInput.currentValue === this.currentWordToAttempt;
 	}
@@ -155,6 +204,10 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 
 		if (this.timePassedSubscription) {
 			this.timePassedSubscription.unsubscribe();
+		}
+
+		if (this.statusPollingInterval) {
+			clearInterval(this.statusPollingInterval);
 		}
 
 		if (this.gameEndedEmitter) {
@@ -209,5 +262,28 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		this.timePassedSubscription = timeElapsedTicker.subscribe((totalSecondsPassed: number) => {
 			this.totalSecondsElapsed = totalSecondsPassed;
 		});
+	}
+
+	private startCountdownTimer() {
+		this.countdownValue = 10;
+		this.showCountdown = true;
+		const timeElapsedTicker = timer(0, 1000).subscribe((totalSecondsPassed: number) => {
+			if (this.countdownValue-- > 0) {
+				return;
+			} else {
+				this.showCountdown = false;
+				timeElapsedTicker.unsubscribe();
+				this.startGame();
+			}
+		});
+	}
+
+	private startPollingStateToServer() {
+		this.statusPollingInterval = setInterval(() => {
+			// Prevent divide by zero exception
+			const percentCompleted = (this.paragraphIndex / (this.paragraphLength || 1)) * 100;
+			const roundedPercentage = Math.round(percentCompleted);
+			this.socketService.sendStatus({ completionPercentage: roundedPercentage });
+		}, 1000);
 	}
 }

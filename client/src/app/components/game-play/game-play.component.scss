@@ -1,27 +1,107 @@
 :host {
-    // Horizontally center within flex-box
-    align-self: center;
-    padding: 15px;
-    border: 2px solid black;
-    border-radius: 5px;
-    display: inline-block;
-    text-align: center;
+	// Horizontally center within flex-box
+	align-self: center;
 
-    -moz-user-select: none;
-    -khtml-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+	display: inline-block;
+	text-align: center;
+
+	-moz-user-select: none;
+	-khtml-user-select: none;
+	-webkit-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.enqueued-caption {
+	padding-bottom: 24px;
 }
 
 .gameplay-container {
+	padding: 15px;
+	border: 2px solid black;
+	border-radius: 5px;
+	max-width: 80%;
+	margin: auto;
 
-    .text-input-component {
-        margin-top: 12px;
-        display: block;
-    }
+	.text-input-component {
+		margin-top: 12px;
+		display: block;
+	}
 
-    .random-paragraph-component {
-        display: block;
-    }
+	.random-paragraph-component {
+		display: block;
+	}
+}
+
+// TODO: move countdown styles into their own isolated scss file & just import them here
+#countdown {
+	position: relative;
+	margin: auto;
+	margin-bottom: 16px;
+	height: 40px;
+	width: 40px;
+	text-align: center;
+}
+
+#countdown-number {
+	color: black;
+	display: inline-block;
+	line-height: 40px;
+}
+
+svg {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 40px;
+	height: 40px;
+	transform: rotateY(-180deg) rotateZ(-90deg);
+}
+
+svg circle {
+	stroke-dasharray: 113px;
+	stroke-dashoffset: 0px;
+	stroke-linecap: round;
+	stroke-width: 2px;
+	stroke: black;
+	fill: none;
+	animation: countdown 10s linear infinite forwards;
+}
+
+@keyframes countdown {
+	from {
+		stroke-dashoffset: 0px;
+	}
+
+	to {
+		stroke-dashoffset: 113px;
+	}
+}
+
+
+.loading {
+	font-size: 30px;
+}
+
+.loading:after {
+	overflow: hidden;
+	display: inline-block;
+	vertical-align: bottom;
+	-webkit-animation: ellipsis steps(4, end) 900ms infinite;
+	animation: ellipsis steps(4, end) 900ms infinite;
+	content: "\2026";
+	/* ascii code for the ellipsis character */
+	width: 0px;
+}
+
+@keyframes ellipsis {
+	to {
+		width: 1.25em;
+	}
+}
+
+@-webkit-keyframes ellipsis {
+	to {
+		width: 1.25em;
+	}
 }
