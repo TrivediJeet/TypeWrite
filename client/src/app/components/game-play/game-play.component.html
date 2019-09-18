@@ -1,5 +1,32 @@
+<div class="enqueued-caption" *ngIf="!inSessionQueue && waitingForSessionToBegin"> Waiting for more players <span class="loading"></span>  </div>
 
-<div class="gameplay-container">
-  <app-random-paragraph class="random-paragraph-component" [paragraph]="randomParagraph" [typedSoFar]="typedSoFar" [currentEditingIndex]="paragraphIndex" [hasError]="errorState" [indexOfFirstError]="indexOfFirstError"></app-random-paragraph>
-  <app-text-input #textInput class="text-input-component" (inputChanged)="onTextInput($event)" [isDisabled]="disableInput" [hasError]="errorState"></app-text-input>
+<div *ngIf="showCountdown">
+    <div id="countdown">
+        <div id="countdown-number">
+            {{countdownValue}}
+        </div>
+        <svg>
+            <circle r="18" cx="20" cy="20"></circle>
+        </svg>
+    </div>
+</div>
+
+<div class="gameplay-container"  [hidden]="inSessionQueue">
+  <app-random-paragraph class="random-paragraph-component" 
+    [paragraph]="randomParagraph" 
+    [typedSoFar]="typedSoFar"
+    [currentEditingIndex]="paragraphIndex" 
+    [hasError]="errorState" 
+    [indexOfFirstError]="indexOfFirstError">
+  </app-random-paragraph>
+  
+  <app-text-input #textInput class="text-input-component" 
+    (inputChanged)="onTextInput($event)" 
+    [isDisabled]="disableInput"
+    [hasError]="errorState">
+  </app-text-input>
+</div>
+
+<div *ngIf="inSessionQueue">
+  Waiting to join session <span class="loading"></span>
 </div>

@@ -29,16 +29,18 @@ export class RandomParagraphComponent implements OnInit {
 	}
 
 	@Input() set typedSoFar(text: string) {
-		if (!this.hasError) {
-			this.correct = this.paragraph.substring(0, this.currentEditingIndex);
-			this.incorrect = '';
-			this.remaining = this.paragraph.substring(this.currentEditingIndex, this.paragraph.length);
-		} else {
-			this.correct = this.paragraph.substring(0, this.indexOfFirstError - 1);
-			this.incorrect = (this.indexOfFirstError === this.currentEditingIndex) ?
-				this.paragraph.charAt(this.indexOfFirstError - 1) :
-				this.paragraph.substring(this.indexOfFirstError - 1, this.currentEditingIndex);
-			this.remaining = this.paragraph.substring(this.currentEditingIndex, this.paragraph.length);
+		if (this.paragraph) {
+			if (!this.hasError) {
+				this.correct = this.paragraph.substring(0, this.currentEditingIndex);
+				this.incorrect = '';
+				this.remaining = this.paragraph.substring(this.currentEditingIndex, this.paragraph.length);
+			} else {
+				this.correct = this.paragraph.substring(0, this.indexOfFirstError - 1);
+				this.incorrect = (this.indexOfFirstError === this.currentEditingIndex) ?
+					this.paragraph.charAt(this.indexOfFirstError - 1) :
+					this.paragraph.substring(this.indexOfFirstError - 1, this.currentEditingIndex);
+				this.remaining = this.paragraph.substring(this.currentEditingIndex, this.paragraph.length);
+			}
 		}
 	}
 }

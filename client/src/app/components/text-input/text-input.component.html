@@ -1,12 +1,20 @@
 
-<div matTooltip="Fix Typo!" #matTooltip="matTooltip" (mousedown)="onMouseEvent($event)" (mouseenter)="onMouseEvent($event)" (click)="onMouseEvent($event)" (mouseleave)="onMouseEvent($event)" (mouseover)="onMouseEvent($event)">
-   <input #textInputField class="input-field" type="text" 
-        [(ngModel)]="currentValue" 
-        (blur)="onBlur($event)" 
-        (mousedown)="onMouseEvent($event)"
-        (input)="onInput($event)" 
-        [disabled]="isDisabled" 
-        appBlockCopyPasteCut
-        [appAutoFocus]="true" 
-    /> 
+<div matTooltip="Fix Typo!" #matTooltip="matTooltip" 
+    (mousedown)="onMouseEvent($event)" 
+    (mouseenter)="onMouseEvent($event)" 
+    (click)="onMouseEvent($event)" 
+    (mouseleave)="onMouseEvent($event)" 
+    (mouseover)="onMouseEvent($event)">
+
+        <input #textInputField class="input-field" type="text" 
+            [(ngModel)]="currentValue" 
+            (blur)="onBlur($event)" 
+            (mousedown)="onMouseEvent($event)"
+            (input)="onInput($event)"
+            (keydown)="onKeydown($event)"
+            [disabled]="isDisabled" 
+            appBlockCopyPasteCut
+            [appAutoFocus]="true" 
+        /> 
+
 </div>

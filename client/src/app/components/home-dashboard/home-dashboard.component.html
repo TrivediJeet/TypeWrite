@@ -1,15 +1,10 @@
-
-<div *ngIf="showCountdown">
-    <div id="countdown">
-        <div id="countdown-number">
-            {{countdownValue}}
-        </div>
-        <svg>
-            <circle r="18" cx="20" cy="20"></circle>
-        </svg>
-    </div>  
+<div [hidden]="!gameStarted">
+    <app-game-play #gamePlay (gameEndedEmitter)="onGameEnded()"></app-game-play>
+    <button mat-button class="play-again-button" *ngIf="gameEnded" (click)="startGame()">Play again</button>
 </div>
 
-<app-game-play #gamePlay (gameEndedEmitter)="onGameEnded()"></app-game-play>
-
-<button mat-button class="play-again-button" *ngIf="gameEnded" (click)="startGame()">Play again</button>
+<div [hidden]="gameStarted">
+    <button (click)="startGame()">
+        Start
+    </button>
+</div>
