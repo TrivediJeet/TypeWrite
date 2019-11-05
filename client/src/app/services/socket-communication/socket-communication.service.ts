@@ -14,8 +14,8 @@ export class SocketCommunicationService {
 		this.socket.emit('messageFromClient', messageToSend);
 	}
 
-	sendStatus(state: any) {
-		this.socket.emit('clientStatusUpdate', state);
+	sendStatus(completionPercentage: number) {
+		this.socket.emit('clientStatusUpdate', completionPercentage);
 	}
 
 	enQueue() {
@@ -25,7 +25,7 @@ export class SocketCommunicationService {
 	// TODO: Complete overhaul
 	getMessages(): Observable<any> {
 		const observable = new Observable(observer => {
-			this.socket.on('GameStarted', (message) => {
+			this.socket.on('SessionStarted', (message) => {
 				observer.next(message);
 			});
 			this.socket.on('JoinedSession', (message) => {

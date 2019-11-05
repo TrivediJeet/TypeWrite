@@ -57,8 +57,14 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 	public waitingForSessionToBegin = false;
 	// The number of characters in the fetched random paragraph
 	private paragraphLength: number;
+	// Players within the current session
+	public playersInSession: {
+		inQueue: boolean;
+		inGame: boolean;
+		completionPercentage: number;
+	};
 
-	// Hold refrence to subscriptions/intervals so we can unsubscribe onDestroy
+	// Hold refrences to subscriptions/intervals so we can unsubscribe onDestroy
 	private timePassedSubscription: Subscription;
 	private socketCommunicationSubscription: Subscription;
 	private statusPollingInterval: any;
@@ -73,30 +79,16 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		// TODO: Significant refactor (perhaps pull logic out into the communication service)
 		this.socketCommunicationSubscription =  this.socketService.getMessages().subscribe((message: any) => {
 			switch (message.caption) {
-				case 'GameStarted': {
-					console.log('game started!');
-					this.startCountdownTimer();
-					this.waitingForSessionToBegin = false;
+				case 'SessionStarted': {
+					this.onSessionStarted();
 					break;
 				}
 				case 'JoinedSession': {
-					console.log('Joined session: ', message);
-					this.inSessionQueue = false;
-					this.waitingForSessionToBegin = true;
-
-					this.randomParagraph = message.sessionState.quote.en;
-					this.paragraphLength = this.randomParagraph.length;
-					this.populateWordQue();
-					this.getNextWordToAttempt();
-
-					this.totalErrorCount = 0;
-					this.disableInput = true;
-					this.typedSoFar = '';
-
+					this.onJoinedSession(message.sessionState.quote.en);
 					break;
 				}
 				case 'serverStateUpdate': {
-					console.log('Session state update from server: ', message.sessionState);
+					this.playersInSession = message.sessionState.players;
 					break;
 				}
 				default: {
@@ -148,6 +140,25 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		this.validateInput();
 	}
 
+	private onSessionStarted() {
+		this.startCountdownTimer();
+		this.waitingForSessionToBegin = false;
+	}
+
+	private onJoinedSession(paragraph: string) {
+		this.inSessionQueue = false;
+		this.waitingForSessionToBegin = true;
+
+		this.randomParagraph = paragraph;
+		this.paragraphLength = this.randomParagraph.length;
+		this.populateWordQue();
+		this.getNextWordToAttempt();
+
+		this.totalErrorCount = 0;
+		this.disableInput = true;
+		this.typedSoFar = '';
+	}
+
 	private enQueue() {
 		this.inSessionQueue = true;
 		this.socketService.enQueue();
@@ -195,27 +206,38 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	// Ends game and presents performance metrics component
 	private Win() {
-		this.disableInput = true;
-		this.currentEditingIndex = 0;
-		this.paragraphIndex = 0;
-		this.typedSoFar = undefined;
-
-		if (this.timePassedSubscription) {
-			this.timePassedSubscription.unsubscribe();
-		}
-
-		if (this.statusPollingInterval) {
-			clearInterval(this.statusPollingInterval);
-		}
+		this.resetGame();
+		this.clearSubscriptions(); // TODO: Send one final update to server indication 100% completion.
+		this.presentPerformanceMetrics();
 
 		if (this.gameEndedEmitter) {
 			this.gameEndedEmitter.emit();
 		}
 
-		this.domService.appendComponentAsSibling(PerformanceMetricsComponent, this.viewContainerRef, this.calculatePerformanceMetrics());
 		this.socketService.sendTestMessage('I won!');
+	}
+
+	private resetGame() {
+		this.disableInput = true;
+		this.currentEditingIndex = 0;
+		this.paragraphIndex = 0;
+		this.typedSoFar = undefined;
+	}
+
+	private presentPerformanceMetrics() {
+		this.domService.appendComponentAsSibling(PerformanceMetricsComponent, this.viewContainerRef, this.calculatePerformanceMetrics());
+	}
+
+	// Clears all subscriptions and intervals except for socketCommunicationSub
+	// Since we still need to recieve session state updates from the server
+	private clearSubscriptions() {
+		if (this.timePassedSubscription) {
+			this.timePassedSubscription.unsubscribe();
+		}
+		if (this.statusPollingInterval) {
+			clearInterval(this.statusPollingInterval);
+		}
 	}
 
 	// Returns a dictionary containing computed performance metrics
@@ -243,7 +265,6 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		return words;
 	}
 
-	// Populates the Que of words to type from the fetched random paragraph
 	private populateWordQue() {
 		const q = new Queue<string>();
 		let totalNumberOfWords = 0;
@@ -255,8 +276,6 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 		this.totalNumberOfWords = totalNumberOfWords;
 	}
 
-	// Begins a timer which emits an event every second
-	// and subscribes to the event, setting the totalTimeElapsed member variable accordingly
 	private startTimer() {
 		const timeElapsedTicker = timer(0, 1000);
 		this.timePassedSubscription = timeElapsedTicker.subscribe((totalSecondsPassed: number) => {
@@ -280,10 +299,14 @@ export class GamePlayComponent implements OnInit, OnDestroy {
 
 	private startPollingStateToServer() {
 		this.statusPollingInterval = setInterval(() => {
-			// Prevent divide by zero exception
-			const percentCompleted = (this.paragraphIndex / (this.paragraphLength || 1)) * 100;
-			const roundedPercentage = Math.round(percentCompleted);
-			this.socketService.sendStatus({ completionPercentage: roundedPercentage });
+			this.socketService.sendStatus(this.calculateCompletedPercentage());
 		}, 1000);
+	}
+
+	private calculateCompletedPercentage() {
+		const percentCompleted = this.errorState ?
+				(this.indexOfFirstError / (this.paragraphLength || 1)) * 100 :
+				(this.paragraphIndex / (this.paragraphLength || 1)) * 100;
+		return Math.round(percentCompleted);
 	}
 }

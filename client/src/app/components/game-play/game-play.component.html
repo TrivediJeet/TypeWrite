@@ -11,6 +11,14 @@
     </div>
 </div>
 
+<!-- TODO: Pull out into its own component -->
+<div *ngIf="!disableInput">
+  Competitor status
+  <div *ngFor="let player of playersInSession">
+    {{player.completionPercentage}}
+  </div>
+</div>
+
 <div class="gameplay-container"  [hidden]="inSessionQueue">
   <app-random-paragraph class="random-paragraph-component" 
     [paragraph]="randomParagraph" 
