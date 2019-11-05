@@ -18,7 +18,7 @@ import { AutoFocusDirective } from './directives/auto-focus/auto-focus.directive
 import { PerformanceMetricsComponent } from './components/performance-metrics/performance-metrics.component';
 
 import { SocketIoModule, SocketIoConfig } from 'ngx-socket-io';
-const socketConfig: SocketIoConfig = { url: 'http://localhost:8000', options: {} };
+const socketConfig: SocketIoConfig = { url: 'http://localhost:3000', options: {} };
 
 @NgModule({
 	declarations: [
